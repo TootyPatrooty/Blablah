@@ -1,0 +1,11 @@
+node_modules
+dist
+
+.env
+build
+.vercel
+
+
+cypress.env.json
+**/cypress/videos
+**/cypress/screenshots

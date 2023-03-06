@@ -1,0 +1,106 @@
+import LikePost from 'modules/posts/LikePost';
+import { forwardRef, useCallback, useEffect, useState } from 'react';
+import { FaRegComments } from 'react-icons/fa';
+import { BASE_API_URL } from 'services/api';
+import IPost from '../../../interfaces/IPost';
+
+import { useTranslate } from '@tolgee/react';
+import CommentListItem from 'modules/comments/CommentListItem/CommentListItem';
+import NewComment from 'modules/comments/NewComment/NewComment';
+import usePostComments from 'modules/comments/usePostComments';
+import PostHeader from 'modules/posts/components/PostHeader';
+import EditPostDescriptionForm from '../components/EditPostDescriptionForm';
+
+interface PropTypes {
+  post: IPost;
+}
+
+const NewsfeedPostListItem = forwardRef<HTMLLIElement, PropTypes>(({ post }, ref) => {
+  const [innerPost, setInnerPost] = useState(post);
+  const [isEditing, setIsEditing] = useState(false);
+  const { comments, onAddCommentSucceeded, onDeleteCommentSucceeded } = usePostComments(
+    innerPost._id,
+  );
+
+  useEffect(() => {
+    setInnerPost(post);
+  }, [post]);
+
+  const onClickEdit = useCallback(() => {
+    setIsEditing(true);
+  }, []);
+
+  const onEditSuccess = useCallback((updatedPost: IPost) => {
+    setInnerPost(updatedPost);
+    setIsEditing(false);
+  }, []);
+
+  const t = useTranslate();
+
+  return (
+    <li
+      data-test={`newsfeed-post-${post._id}`}
+      ref={ref}
+      className='p-5 bg-primary mb-10 rounded-xl'
+    >
+      <PostHeader onClickEdit={onClickEdit} post={innerPost} />
+      {isEditing ? (
+        <EditPostDescriptionForm
+          onCancel={() => {
+            setIsEditing(false);
+          }}
+          onSuccess={onEditSuccess}
+          description={innerPost.description ?? ''}
+          postId={innerPost._id}
+        />
+      ) : (
+        <p className='py-2'>{innerPost.description}</p>
+      )}
+
+      {post.photo && (
+        <img className='w-full' src={BASE_API_URL + `/posts/${innerPost._id}/photo`} alt='avatar' />
+      )}
+
+      <div className='flex justify-between pt-5 gap-2'>
+        <LikePost post={post} initialLikes={post.likes} />
+        <div className='flex items-center gap-2'>
+          <FaRegComments className='text-secondary text-4xl' />
+          <p>{comments.length}</p>
+          <p className='hidden sm:block'>{t('labels.comments')}</p>
+        </div>
+        {/* <div className='flex items-center gap-2'>
+          <button>
+            <FaShare className='text-blue-500 text-4xl' />
+          </button>
+          <p>{0}</p>
+          <p className='hidden sm:block'>Shares</p>
+        </div> */}
+      </div>
+
+      <div>
+        <NewComment
+          onAddCommentSucceeded={onAddCommentSucceeded}
+          postId={innerPost._id}
+          wrapperClassname='my-2'
+        />
+        <ul
+          data-test='newsfeed-post-comments-list'
+          className='flex flex-col gap-1 max-h-[300px] overflow-auto p-2'
+        >
+          {comments.map((comment) => {
+            return (
+              <CommentListItem
+                onDeleteCommentSucceeded={onDeleteCommentSucceeded}
+                key={comment._id}
+                postId={innerPost._id}
+                comment={comment}
+              />
+            );
+          })}
+        </ul>
+      </div>
+    </li>
+  );
+});
+
+export default NewsfeedPostListItem;
